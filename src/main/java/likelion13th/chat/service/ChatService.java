@@ -24,6 +24,7 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final ActiveUserService activeUserService;
 
     private ChatMessageResponse toResponseWithName(ChatMessage m) {
         String name = userRepository.findByUid(m.getSenderUid())
@@ -32,14 +33,25 @@ public class ChatService {
         return ChatMessageResponse.from(m).withSenderName(name);
     }
 
-    /** ✅ 메시지 전송 */
+    /** ✅ 메시지 전송 (상대방 접속 여부에 따라 READ 처리) */
     @Transactional
     public ChatMessageResponse send(SendMessageCommand cmd) {
+        // 상대방 UID 찾기 (A__B 형식의 roomId 가정)
+        String[] uids = cmd.getRoomId().split("__");
+        String senderUid = cmd.getSenderUid();
+        String receiverUid = uids[0].equals(senderUid) ? uids[1] : uids[0];
+
+        // 상대방이 현재 접속 중인지 확인
+        boolean isReceiverActive = activeUserService.getUsersInRoom(cmd.getRoomId()).contains(receiverUid);
+
+        // 접속 중이면 READ, 아니면 SENT
+        MessageStatus status = isReceiverActive ? MessageStatus.READ : MessageStatus.SENT;
+
         ChatMessage saved = chatMessageRepository.save(ChatMessage.builder()
                 .roomId(cmd.getRoomId())
-                .senderUid(cmd.getSenderUid())
+                .senderUid(senderUid)
                 .content(cmd.getContent())
-                .status(MessageStatus.SENT)
+                .status(status) // ✅ 동적으로 상태 결정
                 .build());
         return toResponseWithName(saved);
     }

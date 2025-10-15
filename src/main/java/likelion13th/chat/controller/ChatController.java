@@ -5,9 +5,11 @@ import likelion13th.chat.dto.command.*;
 import likelion13th.chat.dto.event.ChatMessageResponse;
 import likelion13th.chat.dto.event.DeletedMessageEvent;
 import likelion13th.chat.dto.event.WsEvent;
+import likelion13th.chat.service.ActiveUserService;
 import likelion13th.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,7 @@ public class ChatController {
 
     private final ChatService service;
     private final SimpMessagingTemplate broker;
+    private final ActiveUserService activeUserService;
 
     // ===== REST: 채팅 내역 조회 =====
     @GetMapping("/api/rooms/{roomId}/messages")
@@ -52,9 +55,17 @@ public class ChatController {
         broker.convertAndSend("/topic/rooms/" + ev.getRoomId(), WsEvent.deleted(ev.getMessageId()));
     }
 
-    // ===== STOMP: 방 입장 (상대 메시지 읽음 처리) =====
+    // ===== STOMP: 방 입장 (상대 메시지 읽음 처리 + 접속 상태 등록) =====
     @MessageMapping("/enter")
-    public void enter(@Valid EnterRoomCommand cmd) {
+    public void enter(@Valid EnterRoomCommand cmd, SimpMessageHeaderAccessor headerAccessor) { // ✅ 헤더 접근자 추가
+        // 1. 누가 어떤 방에 들어왔는지 STOMP 세션에 저장
+        headerAccessor.getSessionAttributes().put("roomId", cmd.getRoomId());
+        headerAccessor.getSessionAttributes().put("userUid", cmd.getUserUid());
+
+        // 2. ActiveUserService에 현재 접속자 정보 등록
+        activeUserService.userJoined(cmd.getRoomId(), cmd.getUserUid());
+
+        // 3. 기존의 읽음 처리 로직 실행
         List<ChatMessageResponse> changed = service.enter(cmd);
         for (ChatMessageResponse res : changed) {
             broker.convertAndSend("/topic/rooms/" + res.getRoomId(), res);
