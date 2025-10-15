@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:chatdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    driverClassName: org.h2.Driver
+    username: sungmin
+    password: 20200129
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: false
+    properties:
+      hibernate.format_sql: true
+  h2:
+    console:
+      enabled: true
+
