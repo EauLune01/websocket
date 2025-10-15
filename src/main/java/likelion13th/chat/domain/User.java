@@ -18,10 +18,10 @@ public class User {
     private Long id;
 
     @Column(name = "user_key",nullable = false)
-    private String key;
+    private String key; //"Cho"
 
     @Column(nullable = false, length = 50)
-    private String displayName; // "최성민" | "김도영"
+    private String displayName; // "조이현"
 
     /** 전역 고유 ID (서버 내부 식별/방ID 구성용) */
     @Column(name = "uid", nullable = false, length = 36, unique = true)

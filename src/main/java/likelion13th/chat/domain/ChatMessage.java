@@ -20,28 +20,24 @@ public class ChatMessage {
     private Long id;
 
     @Column(nullable = false)
-    private String roomId;   // "uidA-uidB" 형태
+    private String roomId;   // 채팅방 구분 식별자
 
     @Column(nullable = false)
-    private String senderUid;  // ✅ 이제 유일한 발신자 식별자
+    private String senderUid; // 송신자의 고유 식별자
 
     @Column(nullable = false)
-    private String content;
+    private String content; // 메시지 본문
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MessageStatus status;
+    private MessageStatus status; //메시지의 상태 (SENT, DELIVERED, READ)
 
     @CreationTimestamp
-    private Instant createdAt;
+    private Instant createdAt; //엔티티가 처음 저장될 때의 시각을 자동 기록
 
     @UpdateTimestamp
-    private Instant updatedAt;
+    private Instant updatedAt; //엔티티가 수정(update) 될 때마다 자동으로 현재 시간을 업데이트
 
     @Version
-    private Long version;
-
-    // ===== 도메인 로직 =====
-    public void changeContent(String newContent) { this.content = newContent; }
-    public void changeStatus(MessageStatus newStatus) { this.status = newStatus; }
+    private Long version; //JPA의 낙관적 락(Optimistic Locking) 을 위한 버전 필드
 }
